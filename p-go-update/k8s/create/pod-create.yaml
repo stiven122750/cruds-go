@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: create-pod
+  namespace: p-go-create
+  labels:
+    app: create-persona
+spec:
+  nodeSelector:
+    workload: create
+  imagePullSecrets:
+    - name: dockerhub-secret
+  containers:
+    - name: create-container
+      image: danysoftdev/p-go-create:latest
+      ports:
+        - containerPort: 8080
+      envFrom:
+        - secretRef:
+            name: mongo-create-secret

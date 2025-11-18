@@ -17,7 +17,7 @@ func main() {
 	// Conectar a MongoDB
 	err := config.ConectarMongo()
 	if err != nil {
-		log.Fatal("❌ Error conectando a MongoDB:", err)
+		log.Fatal("Error conectando a MongoDB:", err)
 	}
 
 	// Inyectar repositorio real
@@ -39,6 +39,6 @@ func main() {
 
 	// Puerto → debe coincidir con Docker (3000)
 	puerto := ":3000"
-	fmt.Printf("🚀 API DELETE escuchando en http://localhost%s\n", puerto)
+	fmt.Printf("API DELETE escuchando en http://localhost%s\n", puerto)
 	log.Fatal(http.ListenAndServe(puerto, router))
 }

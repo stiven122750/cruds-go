@@ -1,7 +1,7 @@
 //go:build integration
 // +build integration
 
-package services_test
+package services
 
 import (
 	"context"
@@ -53,10 +53,9 @@ func TestEliminarPersonaIntegration(t *testing.T) {
 	_, err = config.Collection.DeleteMany(context.Background(), bson.M{})
 	assert.NoError(t, err)
 
-	// 5️⃣ Inyectar repositorio real
+	// 5️Inyectar repositorio real
 	services.SetPersonaRepository(repositories.RealPersonaRepository{})
 
-	// 6️⃣ Insertar persona para eliminar
 	persona := models.Persona{
 		Documento: "99999",
 		Nombre:    "Eliminar",
