@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: create-deployment
+  namespace: p-go-create
+  labels:
+    app: create-persona
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: create-persona
+  template:
+    metadata:
+      labels:
+        app: create-persona
+    spec:
+      nodeSelector:
+        workload: create
+      imagePullSecrets:
+        - name: dockerhub-secret
+      containers:
+        - name: create-container
+          image: danysoftdev/p-go-create:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: mongo-create-secret

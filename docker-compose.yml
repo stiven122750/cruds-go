@@ -1,0 +1,25 @@
+services:
+  create-service:
+    image: danysoftdev/p-go-create:latest
+    container_name: microservicio-create
+    env_file:
+      - .env
+    restart: always
+    ports:
+      - "8081:8080"
+    networks:
+      - parcial_go_mongo_net
+
+  tester:
+    image: curlimages/curl
+    depends_on:
+      - create-service
+    networks:
+      - parcial_go_mongo_net
+    entrypoint: [ "sh", "-c", "sleep 15 && curl -s --fail http://create-service:8080 || exit 1" ]
+    profiles:
+      - test
+
+networks:
+  parcial_go_mongo_net:
+    external: true
