@@ -1,6 +1,6 @@
 package repositories
 
-import "github.com/danysoftdev/p-go-create/models"
+import "github.com/stiven122750/p-go-delete/models"
 
 // Interface para permitir mocking en pruebas
 type PersonaRepository interface {
