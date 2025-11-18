@@ -14,7 +14,7 @@ kubectl apply -f k8s/ingress-nginx.yaml
 echo "⏳ Esperando a que el Ingress Controller esté 'Running'..."
 kubectl wait --namespace ingress-nginx \
   --for=condition=ready pod \
-  --selector=app.kubernetes.io/component=controller \
+  --selector=app.kubernetes.io/component=controllers \
   --timeout=180s
 
 echo "✅ Ingress listo."

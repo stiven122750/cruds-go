@@ -421,11 +421,11 @@ spec:
     spec:
       containers:
       - args:
-        - /nginx-ingress-controller
+        - /nginx-ingress-controllers
         - --election-id=ingress-nginx-leader
-        - --controller-class=k8s.io/ingress-nginx
+        - --controllers-class=k8s.io/ingress-nginx
         - --ingress-class=nginx
-        - --configmap=$(POD_NAMESPACE)/ingress-nginx-controller
+        - --configmap=$(POD_NAMESPACE)/ingress-nginx-controllers
         - --validating-webhook=:8443
         - --validating-webhook-certificate=/usr/local/certificates/cert
         - --validating-webhook-key=/usr/local/certificates/key
@@ -459,7 +459,7 @@ spec:
           periodSeconds: 10
           successThreshold: 1
           timeoutSeconds: 1
-        name: controller
+        name: controllers
         ports:
         - containerPort: 80
           hostPort: 80
@@ -541,7 +541,7 @@ spec:
       containers:
       - args:
         - create
-        - --host=ingress-nginx-controller-admission,ingress-nginx-controller-admission.$(POD_NAMESPACE).svc
+        - --host=ingress-nginx-controllers-admission,ingress-nginx-controllers-admission.$(POD_NAMESPACE).svc
         - --namespace=$(POD_NAMESPACE)
         - --secret-name=ingress-nginx-admission
         env:
@@ -663,7 +663,7 @@ webhooks:
   - v1
   clientConfig:
     service:
-      name: ingress-nginx-controller-admission
+      name: ingress-nginx-controllers-admission
       namespace: ingress-nginx
       path: /networking/v1/ingresses
   failurePolicy: Fail

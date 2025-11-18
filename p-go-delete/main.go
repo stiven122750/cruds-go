@@ -5,10 +5,10 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/stiven122750/p-go-delete/config"
-	"github.com/stiven122750/p-go-delete/controllers"
-	"github.com/stiven122750/p-go-delete/repositories"
-	"github.com/stiven122750/p-go-delete/services"
+	"github.com/stiven122750/cruds-go/p-go-delete/config"
+	"github.com/stiven122750/cruds-go/p-go-delete/controllers"
+	"github.com/stiven122750/cruds-go/p-go-delete/repositories"
+	"github.com/stiven122750/cruds-go/p-go-delete/services"
 
 	"github.com/gorilla/mux"
 )

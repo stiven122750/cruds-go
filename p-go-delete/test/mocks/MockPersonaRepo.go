@@ -1,7 +1,7 @@
 package mocks
 
 import (
-	"github.com/stiven122750/p-go-delete/models"
+	"github.com/stiven122750/cruds-go/p-go-delete/models"
 	"github.com/stretchr/testify/mock"
 )
 

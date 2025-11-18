@@ -4,8 +4,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/stiven122750/p-go-delete/models"
-	"github.com/stiven122750/p-go-delete/repositories"
+	"github.com/stiven122750/cruds-go/p-go-delete/models"
+	"github.com/stiven122750/cruds-go/p-go-delete/repositories"
 )
 
 var Repo repositories.PersonaRepository

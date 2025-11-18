@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/stiven122750/p-go-delete/models"
+	"github.com/stiven122750/cruds-go/p-go-delete/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )

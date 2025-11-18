@@ -4,11 +4,10 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stiven122750/cruds-go/p-go-delete/models"
+	"github.com/stiven122750/cruds-go/p-go-delete/services"
+	"github.com/stiven122750/cruds-go/p-go-delete/test/mocks"
 	"github.com/stretchr/testify/assert"
-
-	"github.com/stiven122750/p-go-delete/models"
-	"github.com/stiven122750/p-go-delete/services"
-	"github.com/stiven122750/p-go-delete/test/mocks"
 )
 
 func TestEliminarPersonaExitosa(t *testing.T) {

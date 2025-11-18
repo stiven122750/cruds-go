@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/stiven122750/cruds-go/p-go-delete/services"
 	"github.com/gorilla/mux"
+	"github.com/stiven122750/cruds-go/p-go-delete/services"
 )
 
 func EliminarPersona(w http.ResponseWriter, r *http.Request) {
