@@ -29,15 +29,16 @@ func main() {
 	// Router
 	router := mux.NewRouter()
 
+	// 🔥 SALUDO DEL MICROSERVICIO DELETE
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "Hola! API para eliminar personas en MongoDB")
+		fmt.Fprintln(w, "Hola, este es el microservicio de eliminación de personas")
 	})
 
-	// Ruta DELETE
+	// Ruta DELETE real
 	router.HandleFunc("/eliminar-persona/{documento}", controllers.EliminarPersona).Methods("DELETE")
 
-	// Puerto
-	puerto := ":8080"
-	fmt.Printf("🚀 API DELETE lista en http://localhost%s\n", puerto)
+	// Puerto → debe coincidir con Docker (3000)
+	puerto := ":3000"
+	fmt.Printf("🚀 API DELETE escuchando en http://localhost%s\n", puerto)
 	log.Fatal(http.ListenAndServe(puerto, router))
 }

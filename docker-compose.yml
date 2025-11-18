@@ -1,12 +1,25 @@
+version: "3.9"
+
 services:
   create-service:
-    image: danysoftdev/p-go-create:latest
+    build: ./p-go-create
     container_name: microservicio-create
     env_file:
       - .env
     restart: always
     ports:
-      - "8081:8080"
+      - "8080:8080"
+    networks:
+      - parcial_go_mongo_net
+
+  delete-service:
+    build: ./p-go-delete
+    container_name: microservicio-delete
+    env_file:
+      - .env
+    restart: always
+    ports:
+      - "3000:3000"
     networks:
       - parcial_go_mongo_net
 
@@ -14,9 +27,16 @@ services:
     image: curlimages/curl
     depends_on:
       - create-service
+      - delete-service
     networks:
       - parcial_go_mongo_net
-    entrypoint: [ "sh", "-c", "sleep 15 && curl -s --fail http://create-service:8080 || exit 1" ]
+    entrypoint: >
+      sh -c "
+        sleep 15 &&
+        curl -s --fail http://create-service:8080 &&
+        curl -s --fail http://delete-service:3000
+        || exit 1
+      "
     profiles:
       - test
 
