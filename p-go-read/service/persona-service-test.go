@@ -6,7 +6,10 @@ import (
 	"testing"
 )
 
-// Mock del repositorio
+// ===============================
+// MOCK REAL DEL REPOSITORIO
+// ===============================
+
 type MockPersonaRepo struct {
 	FakePersona models.Persona
 	ShouldError bool
@@ -26,11 +29,12 @@ func (m MockPersonaRepo) ObtenerTodasLasPersonas() ([]models.Persona, error) {
 	return []models.Persona{m.FakePersona}, nil
 }
 
-// -------------------------------------
+// ===============================
 // TEST: ObtenerPersona()
-// -------------------------------------
+// ===============================
 
 func TestObtenerPersona_OK(t *testing.T) {
+
 	personaFake := models.Persona{
 		Documento: "123",
 		Nombre:    "Steven",
@@ -73,11 +77,12 @@ func TestObtenerPersona_NoExiste(t *testing.T) {
 	}
 }
 
-// -------------------------------------
+// ===============================
 // TEST: ObtenerTodasLasPersonas()
-// -------------------------------------
+// ===============================
 
 func TestObtenerTodas_OK(t *testing.T) {
+
 	personaFake := models.Persona{
 		Documento: "1",
 		Nombre:    "Test",
