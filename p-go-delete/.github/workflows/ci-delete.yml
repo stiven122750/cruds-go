@@ -1,46 +1,44 @@
-name: CI p-go-delete
+name: CI - p-go-delete
 
 on:
   push:
     branches: ["main"]
     paths:
-      - "../.."
-      - ".github/workflows/delete.yml"
+      - "p-go-delete/**"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "p-go-delete/**"
 
 jobs:
-  ci:
+  test:
     runs-on: ubuntu-latest
 
     defaults:
       run:
-        working-directory: p-go-delete
+        working-directory: ./p-go-delete
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Go
+      - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: "1.22"
 
-      - name: Go mod tidy
+      - name: Verify go.mod exists
+        run: |
+          if [ ! -f "go.mod" ]; then
+            echo "ERROR: No go.mod found inside p-go-delete"
+            exit 1
+          fi
+
+      - name: Tidy modules
         run: go mod tidy
 
-      - name: Run Tests
-        run: go test ./...
+      - name: Run tests
+        run: go test ./... -v
 
-      - name: Build binary
-        run: go build -o app
-
-      - name: Build Docker image
-        run: |
-          docker build \
-            -t ghcr.io/${{ github.repository_owner }}/p-go-delete:latest \
-            .
-
-      - name: Login to GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-      - name: Push Image
-        run: docker push ghcr.io/${{ github.repository_owner }}/p-go-delete:latest
+      - name: Build
+        run: go build -o app-delete
