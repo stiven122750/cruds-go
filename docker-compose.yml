@@ -34,12 +34,24 @@ services:
     networks:
       - parcial_go_mongo_net
 
+  update-service:
+    build: ./p-go-update
+    container_name: microservicio-update
+    env_file:
+      - .env
+    restart: always
+    ports:
+      - "5001:5001"
+    networks:
+      - parcial_go_mongo_net
+
   tester:
     image: curlimages/curl
     depends_on:
       - create-service
       - delete-service
       - read-service
+      - update-service
     networks:
       - parcial_go_mongo_net
     entrypoint: >
@@ -47,7 +59,8 @@ services:
         sleep 15 &&
         curl -s --fail http://create-service:8080 &&
         curl -s --fail http://delete-service:3000 &&
-        curl -s --fail http://read-service:5000
+        curl -s --fail http://read-service:5000 &&
+        curl -s --fail http://update-service:5001
         || exit 1
       "
     profiles:
