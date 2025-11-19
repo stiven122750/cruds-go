@@ -1,0 +1,121 @@
+name: Build and Push Docker Image - p-go-create
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*.*.*'
+
+env:
+  REGISTRO: ghcr.io
+  REPO_NOMBRE_LOWER: danysoftdev/p-go-create
+  DOCKERHUB_REPO: danysoftdev/p-go-create
+
+jobs:
+  test-build-push:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      packages: write
+      attestations: write
+      id-token: write
+
+    steps:
+      # ------------------- CI: Test y verificación -------------------
+
+      - name: 📥 Checkout repositories
+        uses: actions/checkout@v4
+
+      - name: 🔧 Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: ✅ Run Unit Tests
+        run: |
+          echo "🧪 Running unit tests..."
+          go test -v ./... -tags="!integration" -cover
+
+      - name: 🧪 Run Integration Tests (Testcontainers)
+        run: |
+          echo "🌐 Running integration tests..."
+          go test -v ./... -tags=integration
+
+      - name: 🌱 Create .env file (for Mongo and microservice)
+        run: |
+          echo "MONGO_ROOT_USER=${{ secrets.MONGO_ROOT_USER }}" > .env
+          echo "MONGO_ROOT_PASS=${{ secrets.MONGO_ROOT_PASS }}" >> .env
+          echo "MONGO_DB=${{ secrets.MONGO_DB }}" >> .env
+          echo "MONGO_HOST={{ secrets.MONGO_HOST }}" >> .env
+          echo "MONGO_PORT={{ secrets.MONGO_PORT }}" >> .env
+          echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> .env
+          echo "COLLECTION_NAME=${{ secrets.COLLECTION_NAME }}" >> .env
+
+      - name: 🔁 Run Docker Compose Integration Test (mongo and create-service)
+        run: |
+          docker network create parcial_go_mongo_net || true
+          docker compose -f docker-compose-mongo.yml -f docker-compose.yml --env-file .env --profile test up --abort-on-container-exit
+          docker compose -f docker-compose-mongo.yml -f docker-compose.yml down
+
+      # ------------------- CD: Build, escaneo y publicación -------------------
+
+      - name: 🛠️ Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔐 Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRO }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🔐 Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: 🧾 Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.REGISTRO }}/${{ env.REPO_NOMBRE_LOWER }}
+            ${{ env.DOCKERHUB_REPO }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=ref,event=branch
+            type=raw,value=latest
+
+      - name: 🏗️ Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: 🔍 Scan Docker image with Trivy
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.REGISTRO }}/${{ env.REPO_NOMBRE_LOWER }}:latest
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: 1
+
+      - name: 🚀 Push Docker image to GHCR and DockerHub
+        if: success()
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: 📦 Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          generate_release_notes: true
