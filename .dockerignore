@@ -1,0 +1,38 @@
+# Archivos sensibles
+.env
+*.env
+
+# Dependencias, caché y binarios
+/go/pkg
+vendor/
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+main
+bin/
+dist/
+build/
+
+# Archivos generados por Docker
+docker-compose.override.yml
+*.pid
+
+# Archivos temporales
+*.log
+*.tmp
+*.out
+
+#Configuración de IDE/editor
+.vscode/
+.idea/
+*.swp
+
+#Sistema de control de versiones
+.git
+.gitignore
+
+#Archivos del sistema operativo
+.DS_Store
+Thumbs.db

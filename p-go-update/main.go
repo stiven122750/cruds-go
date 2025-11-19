@@ -14,7 +14,7 @@ import (
 
 func main() {
 
-	// Conectar a MongoDB (si lo necesitas para actualizar)
+	// Conectar a MongoDB
 	err := config.ConectarMongo()
 	if err != nil {
 		log.Fatal("Error conectando a MongoDB:", err)
@@ -23,22 +23,22 @@ func main() {
 	// Inyectar repositorio real
 	services.SetPersonaRepository(repositories.RealPersonaRepository{})
 
-	// Inyectar colección de MongoDB
+	// Inyectar colección Mongo
 	repositories.SetCollection(config.Collection)
+
+	// ❗ INYECTAR EL CLIENTE READ REAL (FALTABA ESTO)
+	services.SetReadClient(services.ReadServiceClient{})
 
 	// Router
 	router := mux.NewRouter()
 
-	// Mensaje de bienvenida del microservicio
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "Hola, este es el microservicio de actualización de personas")
 	})
 
-	// Rutas UPDATE
 	router.HandleFunc("/personas/{documento}", controllers.ActualizarPersonaHandler).Methods("PUT")
 
-	// Puerto del microservicio UPDATE
-	puerto := ":5001" // distinto del READ
+	puerto := ":5001"
 	fmt.Printf("API UPDATE escuchando en http://localhost%s\n", puerto)
 	log.Fatal(http.ListenAndServe(puerto, router))
 }

@@ -1,6 +1,9 @@
 version: "3.9"
 
 services:
+  # ===========================
+  # Microservicios GO
+  # ===========================
   create-service:
     build: ./p-go-create
     container_name: microservicio-create
@@ -11,6 +14,11 @@ services:
       - "8080:8080"
     networks:
       - parcial_go_mongo_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 5s
+      retries: 5
+      timeout: 2s
 
   delete-service:
     build: ./p-go-delete
@@ -22,6 +30,11 @@ services:
       - "3000:3000"
     networks:
       - parcial_go_mongo_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 5s
+      retries: 5
+      timeout: 2s
 
   read-service:
     build: ./p-go-read
@@ -33,6 +46,11 @@ services:
       - "5000:5000"
     networks:
       - parcial_go_mongo_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 5s
+      retries: 5
+      timeout: 2s
 
   update-service:
     build: ./p-go-update
@@ -44,19 +62,30 @@ services:
       - "5001:5001"
     networks:
       - parcial_go_mongo_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 5s
+      retries: 5
+      timeout: 2s
 
+  # ============================
+  # Servicio para test de endpoints
+  # ============================
   tester:
     image: curlimages/curl
     depends_on:
-      - create-service
-      - delete-service
-      - read-service
-      - update-service
+      create-service:
+        condition: service_healthy
+      delete-service:
+        condition: service_healthy
+      read-service:
+        condition: service_healthy
+      update-service:
+        condition: service_healthy
     networks:
       - parcial_go_mongo_net
     entrypoint: >
       sh -c "
-        sleep 15 &&
         curl -s --fail http://create-service:8080 &&
         curl -s --fail http://delete-service:3000 &&
         curl -s --fail http://read-service:5000 &&
@@ -66,6 +95,9 @@ services:
     profiles:
       - test
 
+# ===========================
+# Red compartida
+# ===========================
 networks:
   parcial_go_mongo_net:
     external: true
