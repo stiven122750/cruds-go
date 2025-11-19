@@ -3,12 +3,8 @@ name: CI - p-go-read
 on:
   push:
     branches: ["main"]
-    paths:
-      - "p-go-read/**"
   pull_request:
     branches: ["main"]
-    paths:
-      - "p-go-read/**"
 
 jobs:
   test:
