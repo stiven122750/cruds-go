@@ -65,21 +65,46 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Build local image (no login, no push)
-      - name: Build Docker image (local only)
+      # ================================
+      # LOGIN TO DOCKER HUB
+      # ================================
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASS }}
+
+      # ================================
+      # LOGIN TO GHCR
+      # ================================
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      # ================================
+      # BUILD IMAGE (1 sola vez)
+      # Y PUSH A AMBOS REGISTRIES
+      # ================================
+      - name: Build and push (DockerHub + GHCR)
         uses: docker/build-push-action@v5
         with:
           context: ./p-go-delete
           file: ./p-go-delete/Dockerfile
-          push: false
-          load: true
-          tags: p-go-delete:ci-test
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USER }}/p-go-delete:latest
+            ghcr.io/${{ github.repository_owner }}/p-go-delete:latest
 
-      # Trivy scan
+      # ================================
+      # TRIVY SCAN (analiza la imagen local)
+      # ================================
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: "image"
-          image-ref: p-go-delete:ci-test
+          image-ref: ${{ secrets.DOCKER_USER }}/p-go-delete:latest
           severity: HIGH,CRITICAL
 
