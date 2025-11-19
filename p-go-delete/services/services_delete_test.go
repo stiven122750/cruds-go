@@ -17,10 +17,15 @@ func TestEliminarPersonaExitosa(t *testing.T) {
 	documento := "123"
 	persona := models.Persona{Documento: documento}
 
-	// Simular que la persona existe
-	mockRepo.On("ObtenerPersonaPorDocumento", documento).Return(persona, nil)
-	// Simular eliminación exitosa
-	mockRepo.On("EliminarPersonaPorDocumento", documento).Return(nil)
+	// 1️⃣ Simular que la persona existe
+	mockRepo.
+		On("ObtenerPersonaPorDocumento", documento).
+		Return(persona, nil)
+
+	// 2️⃣ Simular eliminación exitosa
+	mockRepo.
+		On("EliminarPersonaPorDocumento", documento).
+		Return(nil)
 
 	err := services.EliminarPersona(documento)
 
@@ -33,6 +38,7 @@ func TestEliminarPersonaDocumentoVacio(t *testing.T) {
 	services.Repo = mockRepo
 
 	err := services.EliminarPersona("")
+
 	assert.EqualError(t, err, "el documento no puede estar vacío")
 }
 
@@ -42,10 +48,15 @@ func TestEliminarPersonaNoExiste(t *testing.T) {
 
 	documento := "999"
 
-	// Simular que la persona NO existe
-	mockRepo.On("ObtenerPersonaPorDocumento", documento).Return(models.Persona{}, errors.New("not found"))
+	// 1️⃣ Simular que la persona NO existe
+	mockRepo.
+		On("ObtenerPersonaPorDocumento", documento).
+		Return(models.Persona{}, errors.New("not found"))
 
 	err := services.EliminarPersona(documento)
 
+	// 2️⃣ El service traduce el error a este mensaje EXACTO
 	assert.EqualError(t, err, "no existe persona con ese documento")
+
+	mockRepo.AssertExpectations(t)
 }

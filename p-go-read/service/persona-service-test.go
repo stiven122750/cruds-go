@@ -7,7 +7,7 @@ import (
 )
 
 // ===============================
-// MOCK REAL DEL REPOSITORIO
+// MOCK DEL REPOSITORIO
 // ===============================
 
 type MockPersonaRepo struct {
@@ -30,10 +30,20 @@ func (m MockPersonaRepo) ObtenerTodasLasPersonas() ([]models.Persona, error) {
 }
 
 // ===============================
+// Reset del repositorio entre tests
+// (evita que un test contamine otro)
+// ===============================
+
+func resetRepo() {
+	SetPersonaRepository(nil)
+}
+
+// ===============================
 // TEST: ObtenerPersona()
 // ===============================
 
 func TestObtenerPersona_OK(t *testing.T) {
+	defer resetRepo()
 
 	personaFake := models.Persona{
 		Documento: "123",
@@ -45,7 +55,6 @@ func TestObtenerPersona_OK(t *testing.T) {
 	})
 
 	p, err := ObtenerPersona("123")
-
 	if err != nil {
 		t.Fatalf("No esperaba error, obtuve: %v", err)
 	}
@@ -53,9 +62,15 @@ func TestObtenerPersona_OK(t *testing.T) {
 	if p.Documento != "123" {
 		t.Fatalf("Documento incorrecto: %s", p.Documento)
 	}
+
+	if p.Nombre != "Steven" {
+		t.Fatalf("Nombre incorrecto: %s", p.Nombre)
+	}
 }
 
 func TestObtenerPersona_Vacio(t *testing.T) {
+	defer resetRepo()
+
 	SetPersonaRepository(MockPersonaRepo{})
 
 	_, err := ObtenerPersona("")
@@ -66,6 +81,8 @@ func TestObtenerPersona_Vacio(t *testing.T) {
 }
 
 func TestObtenerPersona_NoExiste(t *testing.T) {
+	defer resetRepo()
+
 	SetPersonaRepository(MockPersonaRepo{
 		ShouldError: true,
 	})
@@ -82,6 +99,7 @@ func TestObtenerPersona_NoExiste(t *testing.T) {
 // ===============================
 
 func TestObtenerTodas_OK(t *testing.T) {
+	defer resetRepo()
 
 	personaFake := models.Persona{
 		Documento: "1",
@@ -100,5 +118,9 @@ func TestObtenerTodas_OK(t *testing.T) {
 
 	if len(list) != 1 {
 		t.Fatalf("Esperaba 1 persona, recibí %d", len(list))
+	}
+
+	if list[0].Documento != "1" {
+		t.Fatalf("Documento incorrecto en la lista: %s", list[0].Documento)
 	}
 }
