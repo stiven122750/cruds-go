@@ -1,0 +1,65 @@
+name: CI/CD Update
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "p-go-update/**"
+      - ".github/workflows/ci-update.yml"
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - "p-go-update/**"
+  tags:
+    - "v*.*.*"
+
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: p-go-update
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - run: go mod tidy
+      - run: go test ./... -v
+      - run: go build -o app .
+
+  docker-build-push:
+    needs: build-test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/p-go-update
+
+      - uses: docker/build-push-action@v5
+        with:
+          context: ./p-go-update
+          file: ./p-go-update/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+
+      - uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.meta.outputs.tags }}
+          format: table
+          exit-code: 0
