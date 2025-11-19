@@ -11,33 +11,45 @@ import (
 	"time"
 )
 
+//
+// =========================
+//   REPOSITORIO (MOCKEABLE)
+// =========================
+//
+
 var Repo repositories.PersonaRepository
 
 func SetPersonaRepository(r repositories.PersonaRepository) {
 	Repo = r
 }
 
-// ---------------- VALIDACIONES ----------------
+//
+// ===================================
+//   INTERFAZ PARA EL CLIENTE DE READ
+// ===================================
+//
 
-func ValidarDocumento(documento string) error {
-	if strings.TrimSpace(documento) == "" {
-		return errors.New("el documento no puede estar vacío")
-	}
-	return nil
+// Interfaz para permitir mocks en tests
+type ReadClient interface {
+	ObtenerPersona(documento string) (models.Persona, error)
 }
 
-func ValidarUpdate(data models.PersonaUpdate) error {
-	if data.Nombre == "" && data.Apellido == "" && data.Edad == 0 {
-		return errors.New("no hay campos para actualizar")
-	}
-	return nil
+var ReadClientInstance ReadClient
+
+func SetReadClient(c ReadClient) {
+	ReadClientInstance = c
 }
 
-// ---------------- CONSULTAR AL MICROSERVICIO READ ----------------
+//
+// ==========================================
+//   IMPLEMENTACIÓN REAL DEL CLIENTE DE READ
+// ==========================================
+//
 
-func ObtenerPersonaEnRead(documento string) (models.Persona, error) {
+type ReadServiceClient struct{}
 
-	// ⚠️ Usar el host del contenedor en Docker Compose
+func (r ReadServiceClient) ObtenerPersona(documento string) (models.Persona, error) {
+
 	url := fmt.Sprintf("http://read-service:5000/personas/%s", documento)
 
 	client := http.Client{
@@ -65,7 +77,31 @@ func ObtenerPersonaEnRead(documento string) (models.Persona, error) {
 	return models.Persona{}, fmt.Errorf("read-service retornó código inesperado: %d", resp.StatusCode)
 }
 
-// ---------------- SERVICE UPDATE ----------------
+//
+// ==================
+//     VALIDACIONES
+// ==================
+//
+
+func ValidarDocumento(documento string) error {
+	if strings.TrimSpace(documento) == "" {
+		return errors.New("el documento no puede estar vacío")
+	}
+	return nil
+}
+
+func ValidarUpdate(data models.PersonaUpdate) error {
+	if data.Nombre == "" && data.Apellido == "" && data.Edad == 0 {
+		return errors.New("no hay campos para actualizar")
+	}
+	return nil
+}
+
+//
+// ======================
+//      SERVICE UPDATE
+// ======================
+//
 
 func ActualizarPersona(documento string, data models.PersonaUpdate) error {
 
@@ -79,12 +115,16 @@ func ActualizarPersona(documento string, data models.PersonaUpdate) error {
 		return err
 	}
 
-	// Consultar existencia con microservicio READ
-	_, err := ObtenerPersonaEnRead(documento)
+	// Consultar existencia en microservicio READ (mockeable)
+	if ReadClientInstance == nil {
+		return errors.New("ReadClient no configurado")
+	}
+
+	_, err := ReadClientInstance.ObtenerPersona(documento)
 	if err != nil {
 		return err
 	}
 
-	// Actualizar la persona en el repositorio
+	// Actualizar en repositorio
 	return Repo.ActualizarPersonaPorDocumento(documento, data)
 }
