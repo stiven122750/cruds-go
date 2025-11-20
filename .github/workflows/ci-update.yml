@@ -48,6 +48,76 @@ jobs:
       - name: Build binary
         run: go build -o app-update .
 
+  #
+  # =====================================================
+  # INTEGRATION TEST (SIN DOCKER COMPOSE)
+  # =====================================================
+  #
+  integration-test:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+
+      - name: Start fake READ service
+        run: |
+          cat << 'EOF' > fake_read.go
+          package main
+          import (
+            "encoding/json"
+            "net/http"
+          )
+          func main() {
+            http.HandleFunc("/personas/123", func(w http.ResponseWriter, r *http.Request) {
+              w.Header().Set("Content-Type", "application/json")
+              json.NewEncoder(w).Encode(map[string]string{
+                "documento": "123",
+              })
+            })
+            http.ListenAndServe(":5000", nil)
+          }
+          EOF
+
+          nohup go run fake_read.go >/dev/null 2>&1 &
+          sleep 2
+
+      - name: Start UPDATE service
+        working-directory: ./p-go-update
+        run: |
+          nohup go run main.go >/dev/null 2>&1 &
+          sleep 3
+
+      - name: Call UPDATE endpoint
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X PUT http://localhost:8080/personas/123 \
+            -H "Content-Type: application/json" \
+            -d '{"nombre":"Nuevo","edad":30}')
+
+          if [ "$STATUS" != "200" ]; then
+            echo "Expected 200 but got $STATUS"
+            exit 1
+          fi
+
+      - name: Validate body
+        run: |
+          BODY=$(curl -s -X PUT http://localhost:8080/personas/123 \
+            -H "Content-Type: application/json" \
+            -d '{"nombre":"Nuevo","edad":30}')
+
+          if [ "$BODY" != '{"status":"ok"}' ]; then
+            echo "Invalid body: $BODY"
+            exit 1
+          fi
+
+
 
   #
   # =====================================================
