@@ -8,10 +8,11 @@ on:
   workflow_dispatch:
 
 jobs:
+
   #
-  # ==========================================
-  #           JOB: TESTS (unit + integration)
-  # ==========================================
+  # ============================================
+  #  TESTS: UNIT + INTEGRATION (CON MONGO)
+  # ============================================
   #
   test:
     runs-on: ubuntu-latest
@@ -21,10 +22,22 @@ jobs:
         working-directory: ./p-go-delete
 
     services:
-      docker: # Necesario para Testcontainers
-        image: docker:24.0-dind
-        privileged: true
-        options: "--dns 8.8.8.8"
+      mongo:
+        image: mongo:6
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: root
+          MONGO_INITDB_ROOT_PASSWORD: 123456
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # URI para los tests de integración
+      MONGO_URI: mongodb://root:123456@localhost:27017/?authSource=admin
 
     steps:
       - name: Checkout
@@ -35,50 +48,29 @@ jobs:
         with:
           go-version: "1.22"
 
-      - name: Load environment
-        run: |
-          if [ -f ".env" ]; then
-            export $(grep -v '^#' .env | xargs)
-            echo "Variables cargadas"
-          else
-            echo "WARNING: .env no encontrado"
-          fi
-
       - name: Verify go.mod exists
         run: |
           if [ ! -f "go.mod" ]; then
-            echo "ERROR: No go.mod found inside p-go-delete"
+            echo "ERROR: go.mod not found"
             exit 1
           fi
 
       - name: Tidy modules
         run: go mod tidy
 
-      # ============================
-      #      UNIT TESTS
-      # ============================
-      - name: Run UNIT tests
-        run: go test ./... -v -count=1
+      - name: Run unit tests
+        run: go test ./... -v -run Test -short
 
-      # ============================
-      #   INTEGRATION TESTS
-      #   Testcontainers + MongoDB
-      # ============================
-      - name: Run INTEGRATION tests
-        run: |
-          echo "Ejecutando pruebas de integración..."
-          go test ./... -v -tags=integration -count=1
+      - name: Run integration tests
+        run: go test -tags=integration ./... -v
 
-      # ============================
-      #        BUILD BINARY
-      # ============================
       - name: Build
         run: go build -o app-delete .
 
   #
-  # =====================================================
-  #   DOCKER BUILDX + TRIVY + PUSH DOCKERHUB + GHCR
-  # =====================================================
+  # ============================================
+  #   DOCKER BUILDX + TRIVY + PUSH
+  # ============================================
   #
   docker:
     runs-on: ubuntu-latest
@@ -91,18 +83,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # ================================
-      # LOGIN DOCKER HUB
-      # ================================
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASS }}
 
-      # ================================
-      # LOGIN GHCR
-      # ================================
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
@@ -110,9 +96,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
 
-      # ================================
-      # BUILD (UNA VEZ) Y PUSH A AMBOS
-      # ================================
       - name: Build and Push (DockerHub + GHCR)
         uses: docker/build-push-action@v5
         with:
@@ -123,20 +106,18 @@ jobs:
             ${{ secrets.DOCKER_USER }}/p-go-delete:latest
             ghcr.io/${{ github.repository_owner }}/p-go-delete:latest
 
-      # ================================
-      # TRIVY SCAN
-      # ================================
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
-          scan-type: "image"
+          scan-type: image
           image-ref: ${{ secrets.DOCKER_USER }}/p-go-delete:latest
           severity: HIGH,CRITICAL
 
+
   #
-  # =====================================================
-  #   AUTO RELEASE ON TAG v*.*.*
-  # =====================================================
+  # ============================================
+  #   AUTO RELEASE ON TAG
+  # ============================================
   #
   release:
     name: Create Release
