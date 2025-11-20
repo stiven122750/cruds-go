@@ -8,12 +8,23 @@ on:
   workflow_dispatch:
 
 jobs:
+  #
+  # ==========================================
+  #           JOB: TESTS (unit + integration)
+  # ==========================================
+  #
   test:
     runs-on: ubuntu-latest
 
     defaults:
       run:
         working-directory: ./p-go-delete
+
+    services:
+      docker: # Necesario para Testcontainers
+        image: docker:24.0-dind
+        privileged: true
+        options: "--dns 8.8.8.8"
 
     steps:
       - name: Checkout
@@ -43,9 +54,24 @@ jobs:
       - name: Tidy modules
         run: go mod tidy
 
-      - name: Run unit tests
-        run: go test ./... -v
+      # ============================
+      #      UNIT TESTS
+      # ============================
+      - name: Run UNIT tests
+        run: go test ./... -v -count=1
 
+      # ============================
+      #   INTEGRATION TESTS
+      #   Testcontainers + MongoDB
+      # ============================
+      - name: Run INTEGRATION tests
+        run: |
+          echo "Ejecutando pruebas de integración..."
+          go test ./... -v -tags=integration -count=1
+
+      # ============================
+      #        BUILD BINARY
+      # ============================
       - name: Build
         run: go build -o app-delete .
 
@@ -131,4 +157,3 @@ jobs:
           prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
