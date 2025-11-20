@@ -1,18 +1,17 @@
-package services_test
+package services
 
 import (
 	"errors"
 	"testing"
 
 	"github.com/stiven122750/cruds-go/p-go-delete/models"
-	"github.com/stiven122750/cruds-go/p-go-delete/services"
 	"github.com/stiven122750/cruds-go/p-go-delete/test/mocks"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestEliminarPersonaExitosa(t *testing.T) {
 	mockRepo := new(mocks.MockPersonaRepo)
-	services.Repo = mockRepo
+	Repo = mockRepo
 
 	documento := "123"
 	persona := models.Persona{Documento: documento}
@@ -27,7 +26,7 @@ func TestEliminarPersonaExitosa(t *testing.T) {
 		On("EliminarPersonaPorDocumento", documento).
 		Return(nil)
 
-	err := services.EliminarPersona(documento)
+	err := EliminarPersona(documento)
 
 	assert.NoError(t, err)
 	mockRepo.AssertExpectations(t)
@@ -35,16 +34,16 @@ func TestEliminarPersonaExitosa(t *testing.T) {
 
 func TestEliminarPersonaDocumentoVacio(t *testing.T) {
 	mockRepo := new(mocks.MockPersonaRepo)
-	services.Repo = mockRepo
+	Repo = mockRepo
 
-	err := services.EliminarPersona("")
+	err := EliminarPersona("")
 
 	assert.EqualError(t, err, "el documento no puede estar vacío")
 }
 
 func TestEliminarPersonaNoExiste(t *testing.T) {
 	mockRepo := new(mocks.MockPersonaRepo)
-	services.Repo = mockRepo
+	Repo = mockRepo
 
 	documento := "999"
 
@@ -53,9 +52,9 @@ func TestEliminarPersonaNoExiste(t *testing.T) {
 		On("ObtenerPersonaPorDocumento", documento).
 		Return(models.Persona{}, errors.New("not found"))
 
-	err := services.EliminarPersona(documento)
+	err := EliminarPersona(documento)
 
-	// 2️⃣ El service traduce el error a este mensaje EXACTO
+	// 2️⃣ El service traduce el error
 	assert.EqualError(t, err, "no existe persona con ese documento")
 
 	mockRepo.AssertExpectations(t)

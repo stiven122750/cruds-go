@@ -1,7 +1,7 @@
 //go:build integration
 // +build integration
 
-package services_test
+package services
 
 import (
 	"context"
@@ -11,7 +11,6 @@ import (
 	"github.com/stiven122750/cruds-go/p-go-delete/config"
 	"github.com/stiven122750/cruds-go/p-go-delete/models"
 	"github.com/stiven122750/cruds-go/p-go-delete/repositories"
-	"github.com/stiven122750/cruds-go/p-go-delete/services"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
@@ -23,67 +22,64 @@ import (
 func TestEliminarPersonaIntegration(t *testing.T) {
 	ctx := context.Background()
 
-	// 1️⃣ Crear contenedor MongoDB
+	// 1️⃣ Crear contenedor MongoDB real
 	req := testcontainers.ContainerRequest{
 		Image:        "mongo:6.0",
 		ExposedPorts: []string{"27017/tcp"},
-		WaitingFor: wait.
-			ForListeningPort("27017/tcp").
-			WithStartupTimeout(40 * time.Second), // GH Actions es lento
+		WaitingFor: wait.ForListeningPort("27017/tcp").
+			WithStartupTimeout(40 * time.Second),
 	}
 
-	mongoC, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
+	mongoC, err := testcontainers.GenericContainer(
+		ctx,
+		testcontainers.GenericContainerRequest{
+			ContainerRequest: req,
+			Started:          true,
+		},
+	)
 	assert.NoError(t, err)
 	defer mongoC.Terminate(ctx)
 
-	// 2️⃣ Obtener endpoint real del contenedor
+	// 2️⃣ Obtener endpoint real (host:port)
 	endpoint, err := mongoC.Endpoint(ctx, "27017/tcp")
 	assert.NoError(t, err)
 
-	// 3️⃣ Inyectar variables de entorno para config.Mongo
+	// 3️⃣ Setear variables de entorno para config.ConectarMongo()
 	t.Setenv("MONGO_URI", "mongodb://"+endpoint)
 	t.Setenv("MONGO_DB", "testdb_delete")
 	t.Setenv("COLLECTION_NAME", "personas_test_delete")
 
-	// 4️⃣ Conectar Mongo
+	// 4️⃣ Conectar a Mongo real
 	err = config.ConectarMongo()
 	assert.NoError(t, err)
-	defer config.CerrarMongo()
 
-	// 5️⃣ Enviar colección al repositorio real
+	// 5️⃣ Inyectar colección real en el repositorio
 	repositories.SetCollection(config.Collection)
 
-	// 6️⃣ Limpiar colección antes del test
+	// 6️⃣ Borrar colección antes del test
 	_, err = config.Collection.DeleteMany(ctx, bson.M{})
 	assert.NoError(t, err)
 
-	// 7️⃣ Inyectar repositorio real en el service DELETE
-	services.SetPersonaRepository(repositories.RealPersonaRepository{})
+	// 7️⃣ Inyectar repositorio real en los servicios
+	SetPersonaRepository(repositories.RealPersonaRepository{})
 
-	// 8️⃣ Insertar persona a eliminar
+	// 8️⃣ Insertar persona antes de eliminar (NO existe CreatePersona)
 	persona := models.Persona{
 		Documento: "99999",
 		Nombre:    "Eliminar",
 		Apellido:  "Test",
-		Edad:      30,
-		Correo:    "delete@test.com",
-		Telefono:  "3000000000",
-		Direccion: "Sin dirección",
 	}
 
-	err = services.CrearPersona(persona)
+	_, err = config.Collection.InsertOne(ctx, persona)
 	assert.NoError(t, err)
 
-	// 9️⃣ Eliminar persona
-	err = services.EliminarPersona(persona.Documento)
+	// 9️⃣ Ejecutar eliminación real
+	err = EliminarPersona(persona.Documento)
 	assert.NoError(t, err)
 
-	// 🔟 Validar que ya no exista
-	var resultado models.Persona
-	err = config.Collection.FindOne(ctx, bson.M{"documento": persona.Documento}).Decode(&resultado)
+	// 🔟 Validar que ya no exista en Mongo
+	var result models.Persona
+	err = config.Collection.FindOne(ctx, bson.M{"documento": persona.Documento}).Decode(&result)
 
-	assert.Error(t, err) // Debe fallar: ya no existe
+	assert.Error(t, err) // OK: ya debe estar eliminado
 }
